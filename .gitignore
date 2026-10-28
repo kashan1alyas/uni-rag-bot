@@ -1,0 +1,27 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Local university source documents and generated embeddings
+backend/data/*.pdf
+backend/data/*.PDF
+backend/vector_db/
+
+# Frontend dependencies and build output
+frontend/node_modules/
+frontend/dist/
+frontend/dist-ssr/
+
+# Local tooling
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+*.log
