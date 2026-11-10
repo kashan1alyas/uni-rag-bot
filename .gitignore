@@ -13,6 +13,7 @@ __pycache__/
 backend/data/*.pdf
 backend/data/*.PDF
 backend/vector_db/
+backend/chat_history.db
 
 # Frontend dependencies and build output
 frontend/node_modules/

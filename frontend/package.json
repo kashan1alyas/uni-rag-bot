@@ -7,11 +7,20 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
+    "test:chat-history": "node --test test/chat-history.test.js test/chat-history-api.test.js",
+    "test:notes": "node --test test/notes-api.test.js",
+    "test:upload": "node --test test/upload-api.test.js",
+    "test:quiz": "node --test test/quiz-api.test.js test/quiz-scoring.test.js",
+    "test:exam": "node --test test/exam-api.test.js test/exam-scoring.test.js",
+    "test:presentation": "node --test test/presentation-api.test.js",
+    "test:research": "node --test test/research-api.test.js",
     "preview": "vite preview"
   },
   "dependencies": {
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -21,6 +30,7 @@
     "eslint": "^10.13.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.7",
+    "fake-indexeddb": "^6.2.7",
     "globals": "^17.13.0",
     "vite": "^8.3.5"
   }

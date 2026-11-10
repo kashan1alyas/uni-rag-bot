@@ -86,6 +86,7 @@ def retrieve_documents(question: str, top_k: int = 5):
             "text": text,
             "source": metadata.get("source", "Unknown"),
             "page": metadata.get("page", "Unknown"),
+            "metadata": metadata,
             "distance": results["distances"][0][i],
         })
 
