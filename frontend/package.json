@@ -8,6 +8,7 @@
     "build": "vite build",
     "lint": "eslint .",
     "test:chat-history": "node --test test/chat-history.test.js test/chat-history-api.test.js",
+    "test:document-sources": "node --test test/document-sources-api.test.js",
     "test:notes": "node --test test/notes-api.test.js",
     "test:upload": "node --test test/upload-api.test.js",
     "test:quiz": "node --test test/quiz-api.test.js test/quiz-scoring.test.js",

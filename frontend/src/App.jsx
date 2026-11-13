@@ -37,6 +37,8 @@ import {
   generateResearch,
   listResearchSources,
 } from "./researchApi";
+import StudyPlanner from "./StudyPlanner";
+import CodingAssistant from "./CodingAssistant";
 import { uploadPdf } from "./uploadApi";
 
 const API_URL = "http://127.0.0.1:8000/api/chat";
@@ -1560,6 +1562,21 @@ function getEarliestExamDate() {
   ].join("-");
 }
 
+function SourceLoadRetryButton({ error, loading, onRetry }) {
+  if (!error) return null;
+
+  return (
+    <button
+      type="button"
+      className="source-load-retry"
+      onClick={onRetry}
+      disabled={loading}
+    >
+      Retry
+    </button>
+  );
+}
+
 function App() {
   const [messages, setMessages] = useState([]);
   const [chats, setChats] = useState([]);
@@ -1594,8 +1611,11 @@ function App() {
   const [examOpen, setExamOpen] = useState(false);
   const [presentationOpen, setPresentationOpen] = useState(false);
   const [researchOpen, setResearchOpen] = useState(false);
+  const [studyPlannerOpen, setStudyPlannerOpen] = useState(false);
+  const [codingAssistantOpen, setCodingAssistantOpen] = useState(false);
   const [notesSources, setNotesSources] = useState([]);
   const [notesSourcesLoading, setNotesSourcesLoading] = useState(false);
+  const [notesSourcesError, setNotesSourcesError] = useState("");
   const [notesSelectedSource, setNotesSelectedSource] = useState("all");
   const [notesType, setNotesType] = useState("short");
   const [notesLoading, setNotesLoading] = useState(false);
@@ -1608,6 +1628,7 @@ function App() {
   const [notesPdfExporting, setNotesPdfExporting] = useState(false);
   const [quizSources, setQuizSources] = useState([]);
   const [quizSourcesLoading, setQuizSourcesLoading] = useState(false);
+  const [quizSourcesError, setQuizSourcesError] = useState("");
   const [quizSelectedSource, setQuizSelectedSource] = useState("all");
   const [quizQuestionCount, setQuizQuestionCount] = useState("5");
   const [quizDifficulty, setQuizDifficulty] = useState("Medium");
@@ -1621,6 +1642,7 @@ function App() {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [examSources, setExamSources] = useState([]);
   const [examSourcesLoading, setExamSourcesLoading] = useState(false);
+  const [examSourcesError, setExamSourcesError] = useState("");
   const [examSelectedSources, setExamSelectedSources] = useState([]);
   const [examAllDocuments, setExamAllDocuments] = useState(true);
   const [examSubject, setExamSubject] = useState("");
@@ -1644,6 +1666,7 @@ function App() {
   const [examPracticeFocus, setExamPracticeFocus] = useState([]);
   const [presentationSources, setPresentationSources] = useState([]);
   const [presentationSourcesLoading, setPresentationSourcesLoading] = useState(false);
+  const [presentationSourcesError, setPresentationSourcesError] = useState("");
   const [presentationSelectedSources, setPresentationSelectedSources] = useState([]);
   const [presentationAllDocuments, setPresentationAllDocuments] = useState(false);
   const [presentationTopic, setPresentationTopic] = useState("");
@@ -1658,6 +1681,7 @@ function App() {
   const [presentationPreviewIndex, setPresentationPreviewIndex] = useState(0);
   const [researchSources, setResearchSources] = useState([]);
   const [researchSourcesLoading, setResearchSourcesLoading] = useState(false);
+  const [researchSourcesError, setResearchSourcesError] = useState("");
   const [researchSelectedSources, setResearchSelectedSources] = useState([]);
   const [researchAllDocuments, setResearchAllDocuments] = useState(true);
   const [researchTopic, setResearchTopic] = useState("");
@@ -1974,6 +1998,7 @@ function App() {
     setExamOpen(false);
     setPresentationOpen(false);
     setResearchOpen(false);
+    setStudyPlannerOpen(false);
     setCoverStatus("");
   }
 
@@ -1984,8 +2009,10 @@ function App() {
     setExamOpen(false);
     setPresentationOpen(false);
     setResearchOpen(false);
+    setStudyPlannerOpen(false);
     setNotesError("");
     setNotesStatus("");
+    setNotesSourcesError("");
     setNotesSourcesLoading(true);
     try {
       const sources = await listNotesSources();
@@ -1996,6 +2023,7 @@ function App() {
         );
       }
     } catch (sourceError) {
+      setNotesSourcesError(sourceError.message);
       setNotesError(sourceError.message);
     } finally {
       setNotesSourcesLoading(false);
@@ -2009,8 +2037,10 @@ function App() {
     setExamOpen(false);
     setPresentationOpen(false);
     setResearchOpen(false);
+    setStudyPlannerOpen(false);
     setQuizError("");
     setQuizStatus("");
+    setQuizSourcesError("");
     setQuizSourcesLoading(true);
     try {
       const sources = await listQuizSources();
@@ -2021,6 +2051,7 @@ function App() {
         );
       }
     } catch (sourceError) {
+      setQuizSourcesError(sourceError.message);
       setQuizError(sourceError.message);
     } finally {
       setQuizSourcesLoading(false);
@@ -2034,8 +2065,10 @@ function App() {
     setExamOpen(true);
     setPresentationOpen(false);
     setResearchOpen(false);
+    setStudyPlannerOpen(false);
     setExamPlanError("");
     setExamPlanStatus("");
+    setExamSourcesError("");
     setExamSourcesLoading(true);
     try {
       const sources = await listExamSources();
@@ -2049,6 +2082,7 @@ function App() {
         );
       }
     } catch (sourceError) {
+      setExamSourcesError(sourceError.message);
       setExamPlanError(sourceError.message);
     } finally {
       setExamSourcesLoading(false);
@@ -2062,8 +2096,10 @@ function App() {
     setExamOpen(false);
     setPresentationOpen(true);
     setResearchOpen(false);
+    setStudyPlannerOpen(false);
     setPresentationError("");
     setPresentationStatus("");
+    setPresentationSourcesError("");
     setPresentationSourcesLoading(true);
     try {
       const sources = await listPresentationSources();
@@ -2072,6 +2108,7 @@ function App() {
         previous.filter((source) => sources.includes(source))
       );
     } catch (sourceError) {
+      setPresentationSourcesError(sourceError.message);
       setPresentationError(sourceError.message);
     } finally {
       setPresentationSourcesLoading(false);
@@ -2085,8 +2122,10 @@ function App() {
     setExamOpen(false);
     setPresentationOpen(false);
     setResearchOpen(true);
+    setStudyPlannerOpen(false);
     setResearchError("");
     setResearchStatus("");
+    setResearchSourcesError("");
     setResearchSourcesLoading(true);
     try {
       const sources = await listResearchSources();
@@ -2096,10 +2135,32 @@ function App() {
       );
       setResearchAllDocuments(sources.length > 0 && sources.length <= 12);
     } catch (sourceError) {
+      setResearchSourcesError(sourceError.message);
       setResearchError(sourceError.message);
     } finally {
       setResearchSourcesLoading(false);
     }
+  }
+
+  function openStudyPlanner() {
+    setAssignmentOpen(true);
+    setNotesOpen(false);
+    setQuizOpen(false);
+    setExamOpen(false);
+    setPresentationOpen(false);
+    setResearchOpen(false);
+    setStudyPlannerOpen(true);
+  }
+
+  function openCodingAssistant() {
+    setAssignmentOpen(true);
+    setNotesOpen(false);
+    setQuizOpen(false);
+    setExamOpen(false);
+    setPresentationOpen(false);
+    setResearchOpen(false);
+    setStudyPlannerOpen(false);
+    setCodingAssistantOpen(true);
   }
 
   async function handleGenerateNotes(event) {
@@ -2543,6 +2604,11 @@ function App() {
         {examPlanError && (
           <div className="error-message" role="alert">
             <span>⚠</span> {examPlanError}
+            <SourceLoadRetryButton
+              error={examSourcesError}
+              loading={examSourcesLoading}
+              onRetry={openExamPreparation}
+            />
           </div>
         )}
         {examPlanStatus && !examPlanLoading && (
@@ -2986,6 +3052,11 @@ function App() {
         {presentationError && (
           <div className="error-message" role="alert">
             <span>⚠</span> {presentationError}
+            <SourceLoadRetryButton
+              error={presentationSourcesError}
+              loading={presentationSourcesLoading}
+              onRetry={openPresentationBuilder}
+            />
           </div>
         )}
         {presentationStatus && !presentationLoading && !presentationExporting && (
@@ -3260,6 +3331,11 @@ function App() {
         {researchError && (
           <div className="error-message" role="alert">
             <span>⚠</span> {researchError}
+            <SourceLoadRetryButton
+              error={researchSourcesError}
+              loading={researchSourcesLoading}
+              onRetry={openResearchAssistant}
+            />
           </div>
         )}
         {researchStatus && !researchLoading && !researchExporting && (
@@ -3423,6 +3499,11 @@ function App() {
         {notesError && (
           <div className="error-message" role="alert">
             <span>⚠</span> {notesError}
+            <SourceLoadRetryButton
+              error={notesSourcesError}
+              loading={notesSourcesLoading}
+              onRetry={openNotesGenerator}
+            />
           </div>
         )}
         {notesStatus && !notesLoading && (
@@ -3578,6 +3659,11 @@ function App() {
         {quizError && (
           <div className="error-message" role="alert">
             <span>⚠</span> {quizError}
+            <SourceLoadRetryButton
+              error={quizSourcesError}
+              loading={quizSourcesLoading}
+              onRetry={openQuizGenerator}
+            />
           </div>
         )}
         {quizStatus && !quizLoading && (
@@ -3985,43 +4071,63 @@ function App() {
         ]);
         if (notesResult.status === "fulfilled") {
           setNotesSources(notesResult.value);
+          setNotesSourcesError("");
           setNotesError("");
-        } else if (notesOpen) {
-          setNotesError(
-            `The PDF was indexed, but the notes document list could not be refreshed: ${notesResult.reason.message}`
-          );
+        } else {
+          setNotesSourcesError(notesResult.reason.message);
+          if (notesOpen) {
+            setNotesError(
+              `The PDF was indexed, but the notes document list could not be refreshed: ${notesResult.reason.message}`
+            );
+          }
         }
         if (quizResult.status === "fulfilled") {
           setQuizSources(quizResult.value);
+          setQuizSourcesError("");
           setQuizError("");
-        } else if (quizOpen) {
-          setQuizError(
-            `The PDF was indexed, but the quiz document list could not be refreshed: ${quizResult.reason.message}`
-          );
+        } else {
+          setQuizSourcesError(quizResult.reason.message);
+          if (quizOpen) {
+            setQuizError(
+              `The PDF was indexed, but the quiz document list could not be refreshed: ${quizResult.reason.message}`
+            );
+          }
         }
         if (examResult.status === "fulfilled") {
           setExamSources(examResult.value);
+          setExamSourcesError("");
           setExamPlanError("");
-        } else if (examOpen) {
-          setExamPlanError(
-            `The PDF was indexed, but the exam document list could not be refreshed: ${examResult.reason.message}`
-          );
+        } else {
+          setExamSourcesError(examResult.reason.message);
+          if (examOpen) {
+            setExamPlanError(
+              `The PDF was indexed, but the exam document list could not be refreshed: ${examResult.reason.message}`
+            );
+          }
         }
         if (presentationResult.status === "fulfilled") {
           setPresentationSources(presentationResult.value);
+          setPresentationSourcesError("");
           setPresentationError("");
-        } else if (presentationOpen) {
-          setPresentationError(
-            `The PDF was indexed, but the presentation document list could not be refreshed: ${presentationResult.reason.message}`
-          );
+        } else {
+          setPresentationSourcesError(presentationResult.reason.message);
+          if (presentationOpen) {
+            setPresentationError(
+              `The PDF was indexed, but the presentation document list could not be refreshed: ${presentationResult.reason.message}`
+            );
+          }
         }
         if (researchResult.status === "fulfilled") {
           setResearchSources(researchResult.value);
+          setResearchSourcesError("");
           setResearchError("");
-        } else if (researchOpen) {
-          setResearchError(
-            `The PDF was indexed, but the research document list could not be refreshed: ${researchResult.reason.message}`
-          );
+        } else {
+          setResearchSourcesError(researchResult.reason.message);
+          if (researchOpen) {
+            setResearchError(
+              `The PDF was indexed, but the research document list could not be refreshed: ${researchResult.reason.message}`
+            );
+          }
         }
         setSuggestionsLoading(true);
         await refreshSuggestions();
@@ -4082,6 +4188,7 @@ function App() {
     setError("");
     setLoading(false);
     setAssignmentOpen(false);
+    setStudyPlannerOpen(false);
     setPresentationOpen(false);
     setResearchOpen(false);
     setChatHistoryError("");
@@ -4109,6 +4216,7 @@ function App() {
     setChatHistoryStatus("");
     setLoading(false);
     setAssignmentOpen(false);
+    setStudyPlannerOpen(false);
     setPresentationOpen(false);
     setResearchOpen(false);
     try {
@@ -4350,6 +4458,14 @@ function App() {
           >
             <span>⌕</span> Research Assistant
           </button>
+          <button
+            type="button"
+            className={`sidebar-tool-button${studyPlannerOpen ? " active" : ""}`}
+            onClick={openStudyPlanner}
+            aria-current={studyPlannerOpen ? "page" : undefined}
+          >
+            <span>▦</span> AI Study Planner
+          </button>
         </div>
 
         <div className="sidebar-label">YOUR STUDY ASSISTANT</div>
@@ -4372,7 +4488,7 @@ function App() {
       </aside>
 
       <main
-        className={`main-panel${!assignmentOpen && !notesOpen && !quizOpen && !examOpen && !presentationOpen && !researchOpen && messages.length === 0 ? " main-panel-welcome" : ""}`}
+        className={`main-panel${!assignmentOpen && !notesOpen && !quizOpen && !examOpen && !presentationOpen && !researchOpen && !studyPlannerOpen && messages.length === 0 ? " main-panel-welcome" : ""}`}
       >
         <header className="topbar">
           <div>
@@ -4399,7 +4515,9 @@ function App() {
                         ? "presentation"
                       : researchOpen
                         ? "research"
-                        : ""
+                        : studyPlannerOpen
+                          ? "planner"
+                          : ""
             }
             onChange={(event) => {
               if (event.target.value === "notes") {
@@ -4412,12 +4530,15 @@ function App() {
                 openPresentationBuilder();
               } else if (event.target.value === "research") {
                 openResearchAssistant();
+              } else if (event.target.value === "planner") {
+                openStudyPlanner();
               } else {
                 setNotesOpen(false);
                 setQuizOpen(false);
                 setExamOpen(false);
                 setPresentationOpen(false);
                 setResearchOpen(false);
+                setStudyPlannerOpen(false);
                 setAssignmentOpen(false);
               }
             }}
@@ -4428,6 +4549,7 @@ function App() {
             <option value="exam">Exam Prep</option>
             <option value="presentation">Presentation</option>
             <option value="research">Research</option>
+            <option value="planner">Study Planner</option>
           </select>
           <button
             className="assignment-toggle"
@@ -4452,8 +4574,8 @@ function App() {
             </div>
           )}
           {assignmentOpen ? (
-            <div className={notesOpen || quizOpen || examOpen || presentationOpen || researchOpen ? "study-tools-shell" : "assignment-panel"}>
-              {!notesOpen && !quizOpen && !examOpen && !presentationOpen && !researchOpen && (
+            <div className={notesOpen || quizOpen || examOpen || presentationOpen || researchOpen || studyPlannerOpen ? "study-tools-shell" : "assignment-panel"}>
+              {!notesOpen && !quizOpen && !examOpen && !presentationOpen && !researchOpen && !studyPlannerOpen && (
                 <>
               <div className="assignment-heading">
                 <p className="eyebrow">PLAN AND DRAFT</p>
@@ -4830,6 +4952,11 @@ function App() {
                         {notesError && (
                           <div className="error-message" role="alert">
                             <span>⚠</span> {notesError}
+                            <SourceLoadRetryButton
+                              error={notesSourcesError}
+                              loading={notesSourcesLoading}
+                              onRetry={openNotesGenerator}
+                            />
                           </div>
                         )}
                         {notesStatus && !notesLoading && (
@@ -4914,6 +5041,11 @@ function App() {
                 renderPresentationPanel()
               ) : researchOpen ? (
                 renderResearchPanel()
+              ) : studyPlannerOpen ? (
+                <StudyPlanner
+                  uploading={uploading}
+                  onFilesSelected={handleFileSelection}
+                />
               ) : null}
             </div>
           ) : (

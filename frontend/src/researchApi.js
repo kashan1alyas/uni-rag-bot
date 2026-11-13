@@ -1,3 +1,5 @@
+import { listDocumentSources } from "./documentSourcesApi";
+
 const RESEARCH_URL = "http://127.0.0.1:8000/api/research";
 
 async function readError(response, fallback) {
@@ -33,22 +35,10 @@ async function requestResearchFile(path, request, fallback) {
 }
 
 export async function listResearchSources() {
-  let response;
-  try {
-    response = await fetch(`${RESEARCH_URL}/sources`);
-  } catch (error) {
-    throw new Error(
-      "Could not connect to the research assistant. Make sure FastAPI is running.",
-      { cause: error }
-    );
-  }
-  if (!response.ok) {
-    throw new Error(
-      await readError(response, "Indexed research PDFs could not be loaded.")
-    );
-  }
-  const data = await response.json();
-  return data.sources;
+  return listDocumentSources(
+    `${RESEARCH_URL}/sources`,
+    "research assistant"
+  );
 }
 
 export async function generateResearch(request) {

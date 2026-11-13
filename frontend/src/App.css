@@ -2111,6 +2111,29 @@
   font-size: 17px;
 }
 
+.error-message .source-load-retry {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 6px 11px;
+  border: 1px solid #875058;
+  border-radius: 7px;
+  background: #3a252a;
+  color: #ffe2e5;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.error-message .source-load-retry:hover:not(:disabled) {
+  background: #4a2d33;
+}
+
+.error-message .source-load-retry:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 .composer-area {
   width: 100%;
   max-width: 870px;

@@ -58,11 +58,56 @@ class ChatHistoryApiTests(unittest.TestCase):
         Base.metadata.drop_all(bind=self.test_engine)
         Base.metadata.create_all(bind=self.test_engine)
 
+    def test_structured_groq_json_extraction_and_malformed_json_retry(self):
+        self.assertEqual(
+            main._parse_groq_json_object('```json\n{"topics": []}\n```'),
+            {"topics": []},
+        )
+        self.assertEqual(
+            main._parse_groq_json_object('Result: {"topics": []}'),
+            {"topics": []},
+        )
+
+        def completion(content):
+            return SimpleNamespace(
+                choices=[
+                    SimpleNamespace(
+                        message=SimpleNamespace(content=content)
+                    )
+                ]
+            )
+
+        groq_client = SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(
+                    create=Mock(
+                        side_effect=[
+                            completion('{"topics":'),
+                            completion('```json\n{"topics": []}\n```'),
+                        ]
+                    )
+                )
+            )
+        )
+        with patch.object(main, "client", groq_client):
+            result = main._generate_validated_groq_response(
+                [{"role": "user", "content": "Generate topics"}],
+                main._parse_groq_json_object,
+                100,
+            )
+
+        self.assertEqual(result, {"topics": []})
+        self.assertEqual(groq_client.chat.completions.create.call_count, 2)
+        retry_prompt = groq_client.chat.completions.create.call_args_list[1].kwargs[
+            "messages"
+        ][1]["content"]
+        self.assertIn("malformed JSON", retry_prompt)
+
     def test_sqlite_database_and_tables_are_created_automatically(self):
         self.assertTrue(DATABASE_PATH.is_file())
         self.assertEqual(
             set(inspect(engine).get_table_names()),
-            {"conversations", "messages"},
+            {"conversations", "messages", "study_plans", "study_tasks"},
         )
 
     def test_create_list_load_append_rename_and_delete_conversation(self):
@@ -362,7 +407,23 @@ class ChatHistoryApiTests(unittest.TestCase):
         )
         groq_client = SimpleNamespace(
             chat=SimpleNamespace(
-                completions=SimpleNamespace(create=Mock(return_value=groq_response))
+                completions=SimpleNamespace(
+                    create=Mock(
+                        side_effect=[
+                            SimpleNamespace(
+                                choices=[
+                                    SimpleNamespace(
+                                        message=SimpleNamespace(
+                                            content='{"questions":[]}'
+                                        )
+                                    )
+                                ]
+                            ),
+                            groq_response,
+                            groq_response,
+                        ]
+                    )
+                )
             )
         )
 
@@ -404,6 +465,11 @@ class ChatHistoryApiTests(unittest.TestCase):
                 ],
                 {"type": "json_object"},
             )
+            self.assertEqual(groq_client.chat.completions.create.call_count, 2)
+            retry_prompt = groq_client.chat.completions.create.call_args_list[1].kwargs[
+                "messages"
+            ][2]["content"]
+            self.assertIn("failed validation", retry_prompt)
 
             all_documents = self.client.post(
                 "/api/quiz",
@@ -418,6 +484,7 @@ class ChatHistoryApiTests(unittest.TestCase):
                 all_documents.json()["sources"],
                 ["linear.pdf", "neural.pdf"],
             )
+            self.assertEqual(groq_client.chat.completions.create.call_count, 3)
             all_prompt = groq_client.chat.completions.create.call_args.kwargs[
                 "messages"
             ][1]["content"]
@@ -498,7 +565,7 @@ class ChatHistoryApiTests(unittest.TestCase):
         invalid_questions = SimpleNamespace(
             choices=[
                 SimpleNamespace(
-                    message=SimpleNamespace(content='{"questions": []}')
+                    message=SimpleNamespace(content="{}")
                 )
             ]
         )
@@ -520,7 +587,8 @@ class ChatHistoryApiTests(unittest.TestCase):
                 },
             )
         self.assertEqual(invalid.status_code, 502)
-        self.assertIn("invalid quiz", invalid.json()["detail"])
+        self.assertIn("missing required field 'questions'", invalid.json()["detail"])
+        self.assertEqual(groq_client.chat.completions.create.call_count, 2)
 
     def test_exam_plan_filters_documents_and_builds_daily_schedule(self):
         documents = [

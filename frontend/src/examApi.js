@@ -1,3 +1,5 @@
+import { listDocumentSources } from "./documentSourcesApi";
+
 const EXAM_URL = "http://127.0.0.1:8000/api/exam";
 
 async function readError(response, fallback) {
@@ -29,20 +31,10 @@ async function postExamRequest(path, request, fallback) {
 }
 
 export async function listExamSources() {
-  let response;
-  try {
-    response = await fetch(`${EXAM_URL}/sources`);
-  } catch (error) {
-    throw new Error(
-      "Could not connect to the exam preparation service. Make sure FastAPI is running.",
-      { cause: error }
-    );
-  }
-  if (!response.ok) {
-    throw new Error(await readError(response, "Lecture PDFs could not be loaded."));
-  }
-  const data = await response.json();
-  return data.sources;
+  return listDocumentSources(
+    `${EXAM_URL}/sources`,
+    "exam preparation service"
+  );
 }
 
 export function generateExamPlan(request) {

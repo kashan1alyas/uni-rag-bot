@@ -1,3 +1,5 @@
+import { listDocumentSources } from "./documentSourcesApi";
+
 const PRESENTATION_URL = "http://127.0.0.1:8000/api/presentations";
 
 async function readError(response, fallback) {
@@ -29,22 +31,10 @@ async function postPresentationRequest(path, request, fallback) {
 }
 
 export async function listPresentationSources() {
-  let response;
-  try {
-    response = await fetch(`${PRESENTATION_URL}/sources`);
-  } catch (error) {
-    throw new Error(
-      "Could not connect to the presentation service. Make sure FastAPI is running.",
-      { cause: error }
-    );
-  }
-  if (!response.ok) {
-    throw new Error(
-      await readError(response, "Lecture PDFs could not be loaded.")
-    );
-  }
-  const data = await response.json();
-  return data.sources;
+  return listDocumentSources(
+    `${PRESENTATION_URL}/sources`,
+    "presentation service"
+  );
 }
 
 export async function generatePresentation(request) {

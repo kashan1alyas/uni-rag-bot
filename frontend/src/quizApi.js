@@ -1,3 +1,5 @@
+import { listDocumentSources } from "./documentSourcesApi";
+
 const QUIZ_URL = "http://127.0.0.1:8000/api/quiz";
 
 async function readError(response, fallback) {
@@ -9,20 +11,7 @@ async function readError(response, fallback) {
 }
 
 export async function listQuizSources() {
-  let response;
-  try {
-    response = await fetch(`${QUIZ_URL}/sources`);
-  } catch (error) {
-    throw new Error(
-      "Could not connect to the quiz service. Make sure FastAPI is running.",
-      { cause: error }
-    );
-  }
-  if (!response.ok) {
-    throw new Error(await readError(response, "Lecture PDFs could not be loaded."));
-  }
-  const data = await response.json();
-  return data.sources;
+  return listDocumentSources(`${QUIZ_URL}/sources`, "quiz service");
 }
 
 export async function generateQuiz(request) {
